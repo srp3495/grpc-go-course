@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"grpc-g-course/greet/greet/greetpb"
+	"io"
 	"log"
 	"net"
 	"strconv"
@@ -41,6 +42,27 @@ func (*server) GreetManyTimes(req *greetpb.GreeetManyRequest, stream greetpb.Gre
 
 	}
 	return nil
+}
+
+func(*server) LongGreet(stream greetpb.GreetService_LongGreetServer) error{
+	res:="Hello "
+	for{
+	req,err:=stream.Recv()
+	
+
+	if err==io.EOF{
+		fmt.Printf("End of file reached")
+		return stream.SendAndClose(&greetpb.LongGreetResponse{
+			Result: res,
+		})
+	}
+	if err!=nil{
+		log.Fatalf("Error receiving client stream : %v",err)
+	}
+    first:=req.Greeting.FirstName
+	res+=first+" !"
+	
+}
 }
 
 func main() {
