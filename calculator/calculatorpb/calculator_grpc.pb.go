@@ -19,6 +19,8 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type CalculatorServiceClient interface {
 	Sum(ctx context.Context, in *SumRequest, opts ...grpc.CallOption) (*SumResponse, error)
+	//stream server
+	PrimeDecompositionStream(ctx context.Context, in *PrimeDecompositionStreamRequest, opts ...grpc.CallOption) (CalculatorService_PrimeDecompositionStreamClient, error)
 }
 
 type calculatorServiceClient struct {
@@ -38,11 +40,45 @@ func (c *calculatorServiceClient) Sum(ctx context.Context, in *SumRequest, opts 
 	return out, nil
 }
 
+func (c *calculatorServiceClient) PrimeDecompositionStream(ctx context.Context, in *PrimeDecompositionStreamRequest, opts ...grpc.CallOption) (CalculatorService_PrimeDecompositionStreamClient, error) {
+	stream, err := c.cc.NewStream(ctx, &CalculatorService_ServiceDesc.Streams[0], "/calculator.calculatorService/PrimeDecompositionStream", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &calculatorServicePrimeDecompositionStreamClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type CalculatorService_PrimeDecompositionStreamClient interface {
+	Recv() (*PrimeDecompositionStreamResponse, error)
+	grpc.ClientStream
+}
+
+type calculatorServicePrimeDecompositionStreamClient struct {
+	grpc.ClientStream
+}
+
+func (x *calculatorServicePrimeDecompositionStreamClient) Recv() (*PrimeDecompositionStreamResponse, error) {
+	m := new(PrimeDecompositionStreamResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // CalculatorServiceServer is the server API for CalculatorService service.
 // All implementations must embed UnimplementedCalculatorServiceServer
 // for forward compatibility
 type CalculatorServiceServer interface {
 	Sum(context.Context, *SumRequest) (*SumResponse, error)
+	//stream server
+	PrimeDecompositionStream(*PrimeDecompositionStreamRequest, CalculatorService_PrimeDecompositionStreamServer) error
 	mustEmbedUnimplementedCalculatorServiceServer()
 }
 
@@ -52,6 +88,9 @@ type UnimplementedCalculatorServiceServer struct {
 
 func (UnimplementedCalculatorServiceServer) Sum(context.Context, *SumRequest) (*SumResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Sum not implemented")
+}
+func (UnimplementedCalculatorServiceServer) PrimeDecompositionStream(*PrimeDecompositionStreamRequest, CalculatorService_PrimeDecompositionStreamServer) error {
+	return status.Errorf(codes.Unimplemented, "method PrimeDecompositionStream not implemented")
 }
 func (UnimplementedCalculatorServiceServer) mustEmbedUnimplementedCalculatorServiceServer() {}
 
@@ -84,6 +123,27 @@ func _CalculatorService_Sum_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _CalculatorService_PrimeDecompositionStream_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(PrimeDecompositionStreamRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(CalculatorServiceServer).PrimeDecompositionStream(m, &calculatorServicePrimeDecompositionStreamServer{stream})
+}
+
+type CalculatorService_PrimeDecompositionStreamServer interface {
+	Send(*PrimeDecompositionStreamResponse) error
+	grpc.ServerStream
+}
+
+type calculatorServicePrimeDecompositionStreamServer struct {
+	grpc.ServerStream
+}
+
+func (x *calculatorServicePrimeDecompositionStreamServer) Send(m *PrimeDecompositionStreamResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 // CalculatorService_ServiceDesc is the grpc.ServiceDesc for CalculatorService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -96,6 +156,12 @@ var CalculatorService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _CalculatorService_Sum_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "PrimeDecompositionStream",
+			Handler:       _CalculatorService_PrimeDecompositionStream_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "calculator/calculatorpb/calculator.proto",
 }

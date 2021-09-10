@@ -13,7 +13,18 @@ message SumResponse{
     int32 Result=1;
 }
 
+message PrimeDecompositionStreamRequest{
+    int64 Value=1;
+}
+
+message PrimeDecompositionStreamResponse{
+    int64 Result=1;
+}
+
 service calculatorService{
     rpc Sum (SumRequest) returns (SumResponse);
+
+    //stream server
+    rpc PrimeDecompositionStream(PrimeDecompositionStreamRequest) returns(stream PrimeDecompositionStreamResponse){};
 }
 
