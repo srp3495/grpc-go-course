@@ -21,6 +21,8 @@ type CalculatorServiceClient interface {
 	Sum(ctx context.Context, in *SumRequest, opts ...grpc.CallOption) (*SumResponse, error)
 	//stream server
 	PrimeDecompositionStream(ctx context.Context, in *PrimeDecompositionStreamRequest, opts ...grpc.CallOption) (CalculatorService_PrimeDecompositionStreamClient, error)
+	ComputeAverage(ctx context.Context, opts ...grpc.CallOption) (CalculatorService_ComputeAverageClient, error)
+	SendMaximum(ctx context.Context, opts ...grpc.CallOption) (CalculatorService_SendMaximumClient, error)
 }
 
 type calculatorServiceClient struct {
@@ -72,6 +74,71 @@ func (x *calculatorServicePrimeDecompositionStreamClient) Recv() (*PrimeDecompos
 	return m, nil
 }
 
+func (c *calculatorServiceClient) ComputeAverage(ctx context.Context, opts ...grpc.CallOption) (CalculatorService_ComputeAverageClient, error) {
+	stream, err := c.cc.NewStream(ctx, &CalculatorService_ServiceDesc.Streams[1], "/calculator.calculatorService/ComputeAverage", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &calculatorServiceComputeAverageClient{stream}
+	return x, nil
+}
+
+type CalculatorService_ComputeAverageClient interface {
+	Send(*ComputeAverageRequest) error
+	CloseAndRecv() (*ComputeAverageResponse, error)
+	grpc.ClientStream
+}
+
+type calculatorServiceComputeAverageClient struct {
+	grpc.ClientStream
+}
+
+func (x *calculatorServiceComputeAverageClient) Send(m *ComputeAverageRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *calculatorServiceComputeAverageClient) CloseAndRecv() (*ComputeAverageResponse, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(ComputeAverageResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *calculatorServiceClient) SendMaximum(ctx context.Context, opts ...grpc.CallOption) (CalculatorService_SendMaximumClient, error) {
+	stream, err := c.cc.NewStream(ctx, &CalculatorService_ServiceDesc.Streams[2], "/calculator.calculatorService/SendMaximum", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &calculatorServiceSendMaximumClient{stream}
+	return x, nil
+}
+
+type CalculatorService_SendMaximumClient interface {
+	Send(*MaxRequest) error
+	Recv() (*MaxResponse, error)
+	grpc.ClientStream
+}
+
+type calculatorServiceSendMaximumClient struct {
+	grpc.ClientStream
+}
+
+func (x *calculatorServiceSendMaximumClient) Send(m *MaxRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *calculatorServiceSendMaximumClient) Recv() (*MaxResponse, error) {
+	m := new(MaxResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // CalculatorServiceServer is the server API for CalculatorService service.
 // All implementations must embed UnimplementedCalculatorServiceServer
 // for forward compatibility
@@ -79,6 +146,8 @@ type CalculatorServiceServer interface {
 	Sum(context.Context, *SumRequest) (*SumResponse, error)
 	//stream server
 	PrimeDecompositionStream(*PrimeDecompositionStreamRequest, CalculatorService_PrimeDecompositionStreamServer) error
+	ComputeAverage(CalculatorService_ComputeAverageServer) error
+	SendMaximum(CalculatorService_SendMaximumServer) error
 	mustEmbedUnimplementedCalculatorServiceServer()
 }
 
@@ -91,6 +160,12 @@ func (UnimplementedCalculatorServiceServer) Sum(context.Context, *SumRequest) (*
 }
 func (UnimplementedCalculatorServiceServer) PrimeDecompositionStream(*PrimeDecompositionStreamRequest, CalculatorService_PrimeDecompositionStreamServer) error {
 	return status.Errorf(codes.Unimplemented, "method PrimeDecompositionStream not implemented")
+}
+func (UnimplementedCalculatorServiceServer) ComputeAverage(CalculatorService_ComputeAverageServer) error {
+	return status.Errorf(codes.Unimplemented, "method ComputeAverage not implemented")
+}
+func (UnimplementedCalculatorServiceServer) SendMaximum(CalculatorService_SendMaximumServer) error {
+	return status.Errorf(codes.Unimplemented, "method SendMaximum not implemented")
 }
 func (UnimplementedCalculatorServiceServer) mustEmbedUnimplementedCalculatorServiceServer() {}
 
@@ -144,6 +219,58 @@ func (x *calculatorServicePrimeDecompositionStreamServer) Send(m *PrimeDecomposi
 	return x.ServerStream.SendMsg(m)
 }
 
+func _CalculatorService_ComputeAverage_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(CalculatorServiceServer).ComputeAverage(&calculatorServiceComputeAverageServer{stream})
+}
+
+type CalculatorService_ComputeAverageServer interface {
+	SendAndClose(*ComputeAverageResponse) error
+	Recv() (*ComputeAverageRequest, error)
+	grpc.ServerStream
+}
+
+type calculatorServiceComputeAverageServer struct {
+	grpc.ServerStream
+}
+
+func (x *calculatorServiceComputeAverageServer) SendAndClose(m *ComputeAverageResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *calculatorServiceComputeAverageServer) Recv() (*ComputeAverageRequest, error) {
+	m := new(ComputeAverageRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func _CalculatorService_SendMaximum_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(CalculatorServiceServer).SendMaximum(&calculatorServiceSendMaximumServer{stream})
+}
+
+type CalculatorService_SendMaximumServer interface {
+	Send(*MaxResponse) error
+	Recv() (*MaxRequest, error)
+	grpc.ServerStream
+}
+
+type calculatorServiceSendMaximumServer struct {
+	grpc.ServerStream
+}
+
+func (x *calculatorServiceSendMaximumServer) Send(m *MaxResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *calculatorServiceSendMaximumServer) Recv() (*MaxRequest, error) {
+	m := new(MaxRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // CalculatorService_ServiceDesc is the grpc.ServiceDesc for CalculatorService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -161,6 +288,17 @@ var CalculatorService_ServiceDesc = grpc.ServiceDesc{
 			StreamName:    "PrimeDecompositionStream",
 			Handler:       _CalculatorService_PrimeDecompositionStream_Handler,
 			ServerStreams: true,
+		},
+		{
+			StreamName:    "ComputeAverage",
+			Handler:       _CalculatorService_ComputeAverage_Handler,
+			ClientStreams: true,
+		},
+		{
+			StreamName:    "SendMaximum",
+			Handler:       _CalculatorService_SendMaximum_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
 		},
 	},
 	Metadata: "calculator/calculatorpb/calculator.proto",

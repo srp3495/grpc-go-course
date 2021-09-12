@@ -30,6 +30,7 @@ func (*server) Greet(ctx context.Context, in *greetpb.GreetRequest) (*greetpb.Gr
 }
 
 func (*server) GreetManyTimes(req *greetpb.GreeetManyRequest, stream greetpb.GreetService_GreetManyTimesServer) error {
+	fmt.Printf("GreetManyTimes function is invoke fro req: %v", req)
 	first := req.Greeting.FirstName
 
 	for i := 0; i < 10; i++ {
@@ -45,6 +46,7 @@ func (*server) GreetManyTimes(req *greetpb.GreeetManyRequest, stream greetpb.Gre
 }
 
 func(*server) LongGreet(stream greetpb.GreetService_LongGreetServer) error{
+	fmt.Printf("LongGreet function is invoked")
 	res:="Hello "
 	for{
 	req,err:=stream.Recv()
@@ -63,6 +65,31 @@ func(*server) LongGreet(stream greetpb.GreetService_LongGreetServer) error{
 	res+=first+" !"
 	
 }
+}
+
+func(*server) GreetEveryOne(stream greetpb.GreetService_GreetEveryOneServer) error{
+	fmt.Printf("GreetEveryOne function is invoked")
+	for{
+		req,err:=stream.Recv()
+		if err==io.EOF{
+			return nil
+		}
+		if err!=nil{
+			log.Fatalf("Error receiving stream : %v",err)
+		}
+
+		first:=req.Greeting.FirstName
+		result:="Hello "+first+" !"
+
+		Senderr:=stream.Send(&greetpb.GreetEveryOneResponse{
+			Result: result,
+		})
+		if Senderr!=nil{
+			log.Fatalf("Error sending response to client : %v",Senderr)
+			return Senderr
+		}
+
+	}
 }
 
 func main() {
