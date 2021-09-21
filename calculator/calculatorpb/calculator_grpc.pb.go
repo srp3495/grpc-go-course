@@ -23,6 +23,7 @@ type CalculatorServiceClient interface {
 	PrimeDecompositionStream(ctx context.Context, in *PrimeDecompositionStreamRequest, opts ...grpc.CallOption) (CalculatorService_PrimeDecompositionStreamClient, error)
 	ComputeAverage(ctx context.Context, opts ...grpc.CallOption) (CalculatorService_ComputeAverageClient, error)
 	SendMaximum(ctx context.Context, opts ...grpc.CallOption) (CalculatorService_SendMaximumClient, error)
+	SquareRoot(ctx context.Context, in *SqrtRequest, opts ...grpc.CallOption) (*SqrtResponse, error)
 }
 
 type calculatorServiceClient struct {
@@ -139,6 +140,15 @@ func (x *calculatorServiceSendMaximumClient) Recv() (*MaxResponse, error) {
 	return m, nil
 }
 
+func (c *calculatorServiceClient) SquareRoot(ctx context.Context, in *SqrtRequest, opts ...grpc.CallOption) (*SqrtResponse, error) {
+	out := new(SqrtResponse)
+	err := c.cc.Invoke(ctx, "/calculator.calculatorService/SquareRoot", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // CalculatorServiceServer is the server API for CalculatorService service.
 // All implementations must embed UnimplementedCalculatorServiceServer
 // for forward compatibility
@@ -148,6 +158,7 @@ type CalculatorServiceServer interface {
 	PrimeDecompositionStream(*PrimeDecompositionStreamRequest, CalculatorService_PrimeDecompositionStreamServer) error
 	ComputeAverage(CalculatorService_ComputeAverageServer) error
 	SendMaximum(CalculatorService_SendMaximumServer) error
+	SquareRoot(context.Context, *SqrtRequest) (*SqrtResponse, error)
 	mustEmbedUnimplementedCalculatorServiceServer()
 }
 
@@ -166,6 +177,9 @@ func (UnimplementedCalculatorServiceServer) ComputeAverage(CalculatorService_Com
 }
 func (UnimplementedCalculatorServiceServer) SendMaximum(CalculatorService_SendMaximumServer) error {
 	return status.Errorf(codes.Unimplemented, "method SendMaximum not implemented")
+}
+func (UnimplementedCalculatorServiceServer) SquareRoot(context.Context, *SqrtRequest) (*SqrtResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SquareRoot not implemented")
 }
 func (UnimplementedCalculatorServiceServer) mustEmbedUnimplementedCalculatorServiceServer() {}
 
@@ -271,6 +285,24 @@ func (x *calculatorServiceSendMaximumServer) Recv() (*MaxRequest, error) {
 	return m, nil
 }
 
+func _CalculatorService_SquareRoot_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SqrtRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(CalculatorServiceServer).SquareRoot(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/calculator.calculatorService/SquareRoot",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(CalculatorServiceServer).SquareRoot(ctx, req.(*SqrtRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // CalculatorService_ServiceDesc is the grpc.ServiceDesc for CalculatorService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -281,6 +313,10 @@ var CalculatorService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Sum",
 			Handler:    _CalculatorService_Sum_Handler,
+		},
+		{
+			MethodName: "SquareRoot",
+			Handler:    _CalculatorService_SquareRoot_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

@@ -6,9 +6,12 @@ import (
 	"grpc-g-course/greet/calculator/calculatorpb"
 	"io"
 	"log"
+	"math"
 	"net"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type server struct {
@@ -93,6 +96,22 @@ func(*server) SendMaximum(stream calculatorpb.CalculatorService_SendMaximumServe
 		   Result: num,
 	   })
    }
+}
+
+func(*server)SquareRoot(ctx context.Context, req *calculatorpb.SqrtRequest) (*calculatorpb.SqrtResponse, error){
+
+	fmt.Println("Inside square root function")
+	num:=req.GetNumber()
+
+	if num<0{
+		return nil,status.Errorf(
+			codes.InvalidArgument,
+			fmt.Sprintf("Number entered is negative :%v",num),
+		)
+	}
+	return &calculatorpb.SqrtResponse{
+		Result: (int32(math.Sqrt(float64(num)))),
+	},nil
 }
 
 func main() {

@@ -38,6 +38,14 @@ message MaxResponse{
     int32 Result=1;
 }
 
+
+message SqrtRequest{
+    int32 Number=1;
+}
+
+message SqrtResponse{
+    int32 Result=1;
+}
 service calculatorService{
     rpc Sum (SumRequest) returns (SumResponse);
 
@@ -51,5 +59,9 @@ service calculatorService{
     //Bidi streaming
 
     rpc SendMaximum (stream MaxRequest) returns (stream MaxResponse);
+
+    //error handling example
+
+    rpc SquareRoot(SqrtRequest) returns (SqrtResponse){};
 }
 

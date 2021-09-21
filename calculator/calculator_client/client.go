@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func main() {
@@ -24,7 +26,8 @@ func main() {
 	//doUnary(c)
 	//doStreaming(c)
 	//doClientStreaming(c)
-    doBidiStreaming(c)
+	//doBidiStreaming(c)
+	doErrorHandling(c)
 
 }
 func doUnary(c calculatorpb.CalculatorServiceClient) {
@@ -64,8 +67,8 @@ func doStreaming(c calculatorpb.CalculatorServiceClient) {
 	}
 }
 
-func doClientStreaming(c calculatorpb.CalculatorServiceClient){
-	request:=[]*calculatorpb.ComputeAverageRequest{
+func doClientStreaming(c calculatorpb.CalculatorServiceClient) {
+	request := []*calculatorpb.ComputeAverageRequest{
 		&calculatorpb.ComputeAverageRequest{
 			Value: 30,
 		},
@@ -80,68 +83,98 @@ func doClientStreaming(c calculatorpb.CalculatorServiceClient){
 		},
 	}
 
-    
-	stream,err:=c.ComputeAverage(context.Background())
-	if err!=nil{
-		log.Fatalf("Error streaming :%v",err)
+	stream, err := c.ComputeAverage(context.Background())
+	if err != nil {
+		log.Fatalf("Error streaming :%v", err)
 
 	}
 
-	for _,req:=range request{
-        fmt.Printf("\n sending the request: %v",req.Value)
+	for _, req := range request {
+		fmt.Printf("\n sending the request: %v", req.Value)
 		stream.Send(req)
-		time.Sleep(1000*time.Millisecond)
+		time.Sleep(1000 * time.Millisecond)
 	}
-	res,err:=stream.CloseAndRecv()
-	if err!=nil{
+	res, err := stream.CloseAndRecv()
+	if err != nil {
 		log.Fatalf("Error in receiving the response")
 	}
-	fmt.Printf("\n Received result: %v",res)
+	fmt.Printf("\n Received result: %v", res)
 
 }
 
-func doBidiStreaming(c calculatorpb.CalculatorServiceClient){
-	request:=[]int32{2,5,7,4,9,12,4,67,66,87,12}
+func doBidiStreaming(c calculatorpb.CalculatorServiceClient) {
+	request := []int32{2, 5, 7, 4, 9, 12, 4, 67, 66, 87, 12}
 
-	waitc:=make(chan struct{})
+	waitc := make(chan struct{})
 
-	stream,err:=c.SendMaximum(context.Background())
+	stream, err := c.SendMaximum(context.Background())
 
-	if err!=nil{
-		log.Fatalf("Error connecting to stream : %v",err)
+	if err != nil {
+		log.Fatalf("Error connecting to stream : %v", err)
 		return
 	}
 
 	//send bunch of messages
-	go func ()  {
-		for _,req:=range request{
-			fmt.Printf("\n Sending number : %v",req)
+	go func() {
+		for _, req := range request {
+			fmt.Printf("\n Sending number : %v", req)
 			stream.Send(&calculatorpb.MaxRequest{
 				Value: req,
 			})
-			time.Sleep(1000*time.Millisecond)
+			time.Sleep(1000 * time.Millisecond)
 		}
 		stream.CloseSend()
 	}()
 
-    //receive bunch of messages
-	go func ()  {
-		for{
-			res,err:=stream.Recv()
-			if err==io.EOF {
+	//receive bunch of messages
+	go func() {
+		for {
+			res, err := stream.Recv()
+			if err == io.EOF {
 				fmt.Print("\n End of message reached \n")
 				break
 			}
-			if err!=nil{
-				log.Fatalf("Error receiving stream : %v",err)
+			if err != nil {
+				log.Fatalf("Error receiving stream : %v", err)
 				break
 			}
 
-             fmt.Printf("\n Received response : %v",res.Result)
-			}
-			close(waitc)
+			fmt.Printf("\n Received response : %v", res.Result)
+		}
+		close(waitc)
 	}()
-	
+
 	<-waitc //to come here when channel is closed
+
+}
+
+func doErrorHandling(c calculatorpb.CalculatorServiceClient) {
+	//correct call
+
+	errorCall(c, 10)
+
+	//error call
+
+	errorCall(c, -4)
+
+}
+
+func errorCall(c calculatorpb.CalculatorServiceClient, num int32) {
+
+	res, err := c.SquareRoot(context.Background(), &calculatorpb.SqrtRequest{Number: num})
+	if err != nil {
+		respErr, ok := status.FromError(err)
+		if ok {
+			fmt.Println("User error happened")
+			fmt.Printf("Error code is : %v \n", respErr.Code())
+			if respErr.Code() == codes.InvalidArgument {
+				fmt.Println("We might have sent a negative number")
+			} else {
+				log.Fatalf("Some framework error happened : %v \n", err)
+			}
+		}
+
+	}
+	fmt.Printf("Square root of : %v is :%v \n", num, res.GetResult())
 
 }
