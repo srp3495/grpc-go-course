@@ -35,6 +35,13 @@ message GreetEveryOneRequest{
 message GreetEveryOneResponse{
     string Result=1;
 }
+message DeadLineGreetRequest{
+    Greeting greeting=1;
+}
+
+message DeadLineGreetResponse{
+    string result=1;
+}
 
 service GreetService{
     //unary
@@ -45,5 +52,7 @@ service GreetService{
     rpc LongGreet(stream LongGreetRequest) returns(LongGreetResponse){};
     //Bidirectional
     rpc GreetEveryOne(stream GreetEveryOneRequest) returns(stream GreetEveryOneResponse){};
+    //unaryWithDeadLine
+    rpc GreetWithDeadline(DeadLineGreetRequest) returns (DeadLineGreetResponse){};
 }
 
