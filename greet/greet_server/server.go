@@ -12,6 +12,7 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 )
 
@@ -118,12 +119,28 @@ func (*server) GreetWithDeadline(ctx context.Context, in *greetpb.DeadLineGreetR
 func main() {
 
 	fmt.Println("Hi Server")
+
+	tls := true //to disable ssl handshake, for enabling make it true
+	opts := []grpc.ServerOption{}
+	if tls {
+		certFile := "ssl/server.crt"
+		keyFile := "ssl/server.pem"
+		creds, sslErr := credentials.NewServerTLSFromFile(certFile, keyFile)
+		if sslErr != nil {
+			log.Fatalf("Error loading ssl certificate : %v", sslErr)
+		}
+
+		opts = append(opts, grpc.Creds(creds))
+	} else {
+		opts = nil
+	}
+
 	lis, err := net.Listen("tcp", "0.0.0.0:50051")
 	if err != nil {
 		log.Fatal("Failed to listen", err)
 	}
 
-	s := grpc.NewServer()
+	s := grpc.NewServer(opts...)
 	greetpb.RegisterGreetServiceServer(s, &server{})
 
 	if err := s.Serve(lis); err != nil {
