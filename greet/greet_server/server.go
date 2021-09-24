@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 )
 
@@ -120,7 +121,7 @@ func main() {
 
 	fmt.Println("Hi Server")
 
-	tls := true //to disable ssl handshake, for enabling make it true
+	tls := false //to disable ssl handshake, for enabling make it true
 	opts := []grpc.ServerOption{}
 	if tls {
 		certFile := "ssl/server.crt"
@@ -142,6 +143,9 @@ func main() {
 
 	s := grpc.NewServer(opts...)
 	greetpb.RegisterGreetServiceServer(s, &server{})
+
+	reflection.Register(s)
+
 
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
